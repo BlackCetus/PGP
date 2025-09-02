@@ -324,9 +324,7 @@ class SETH():
         
     def load_model(self,model_dir):
         checkpoint_p = model_dir / "seth_checkpoint.pt"
-        # Weight link doens't work -> weight was downloaded from the original repo
-        # https://github.com/DagmarIlz/SETH/blob/main/CNN/CNN.pt
-        weights_link = "https://rostlab.org/~deepppi/SETH_CNN.pt"
+        weights_link = "https://github.com/DagmarIlz/SETH/blob/main/CNN/CNN.pt"
         model = DisorderCNN()
         return load_model(model, weights_link, checkpoint_p)
     
@@ -525,7 +523,7 @@ class ProtTucker():
         
     def load_model(self,model_dir):
         checkpoint_p = model_dir / "tucker_weights.pt"
-        weights_link = "http://rostlab.org/~deepppi/embedding_repo/embedding_models/ProtTucker/ProtTucker_ProtT5.pt"
+        weights_link = "https://zenodo.org/records/14675997/files/ProtTucker_ProtT5.pt?download=1"
         model = TuckerFNN()
         return load_model(model,weights_link,checkpoint_p)
     
@@ -533,7 +531,7 @@ class ProtTucker():
         label_p = model_dir / "cath_v430_dom_seqs_S100_161121_labels.txt" 
 
         if not label_p.is_file():
-            embedding_link = "https://rostlab.org/~deepppi/eat_dbs/cath_v430_dom_seqs_S100_161121_labels.txt"
+            embedding_link = "https://raw.githubusercontent.com/Rostlab/EAT/refs/heads/main/data/cath_v430_dom_seqs_S100_161121_labels.txt"
             download_file(embedding_link,label_p)
 
         with open(label_p, 'r') as in_f:
@@ -548,7 +546,7 @@ class ProtTucker():
         emb_local_p = model_dir / "cath_v430_dom_seqs_S100_161121.npy"
        
         if not emb_local_p.is_file():
-            embeddings_link = "https://rostlab.org/~deepppi/eat_dbs/cath_v430_dom_seqs_S100_161121.npy"
+            embeddings_link = "https://zenodo.org/records/14675997/files/cath_v430_dom_seqs_S100_161121.h5?download=1"
             download_file(embeddings_link,emb_local_p)
         embeddings = torch.from_numpy( np.load(emb_local_p) ).to(device)
         embeddings = self.model.single_pass(embeddings)
@@ -556,7 +554,7 @@ class ProtTucker():
         id_file_name = "cath_v430_dom_seqs_S100_161121.txt"
         id_local_p = model_dir / id_file_name
         if not id_local_p.is_file():
-            weights_link = "https://rostlab.org/~deepppi/eat_dbs/" + id_file_name
+            weights_link = "https://raw.githubusercontent.com/Rostlab/EAT/refs/heads/main/data/cath_v430_dom_seqs_S100_161121_labels.txt"
             download_file(weights_link,id_local_p)
             
         with open(id_local_p,'r') as in_f:
@@ -1012,12 +1010,12 @@ class ProtT5Microscope():
             batch.append((pdb_id,seq,seq_len))
             
             n_res_batch = sum([ s_len for  _, _, s_len in batch ]) + seq_len 
-
             # if enough sequences were accumulated to process one batch
             if ( len(batch)>=max_batch_size or  # max. number of sequences per batch
                     n_res_batch>=max_residues or # max. number of residues per batch
                     seq_idx==len(sorted_seqs) # special case: last batch
                     ):
+                
                 pdb_ids, seqs, seq_lens = zip(*batch)
                 batch = list()
                 
@@ -1029,9 +1027,8 @@ class ProtT5Microscope():
                 try:
                     with torch.no_grad():
                         prott5_output = self.prott5( input_ids, attention_mask=attention_mask )
-                except RuntimeError as e:
+                except RuntimeError:
                     print("RuntimeError for {} (L={})".format(pdb_id, seq_lens))
-                    print("Error message:", e)
                     print("Cleaning up ...")
                     del(token_encoding)
                     del(input_ids)
