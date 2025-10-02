@@ -30,8 +30,8 @@ from tmbed_viterbi import Decoder
 from tqdm import tqdm
 
 # ONNX:
-import onnxruntime as ort
-from onnxruntime.capi.onnxruntime_pybind11_state import NoSuchFile
+#import onnxruntime as ort
+#from onnxruntime.capi.onnxruntime_pybind11_state import NoSuchFile
 
 
 
@@ -986,11 +986,24 @@ class ProtT5Microscope():
         start=time.time()
         transformer_name = "Rostlab/prot_t5_xl_half_uniref50-enc"
         prott5_dir = model_dir / "prott5"
-        model = T5EncoderModel.from_pretrained(transformer_name, torch_dtype=torch.float16, 
-                                               cache_dir=prott5_dir, output_attentions=output_attentions)
+        
+        # Try to load from local cache first
+        local_model_path = Path("/tmp/local_prott5")
+        # Use float32 for CPU, float16 for GPU
+        dtype = torch.float32 if device.type == 'cpu' else torch.float16
+        if local_model_path.exists() and (local_model_path / "config.json").exists():
+            print(f"Loading from local cache: {local_model_path}")
+            model = T5EncoderModel.from_pretrained(str(local_model_path), torch_dtype=dtype, 
+                                                   local_files_only=True, output_attentions=output_attentions)
+            tokenizer = T5Tokenizer.from_pretrained(str(local_model_path), do_lower_case=False, local_files_only=True)
+        else:
+            print(f"Loading from Hugging Face: {transformer_name}")
+            model = T5EncoderModel.from_pretrained(transformer_name, torch_dtype=dtype, 
+                                                   cache_dir=prott5_dir, output_attentions=output_attentions)
+            tokenizer = T5Tokenizer.from_pretrained(transformer_name, do_lower_case=False, cache_dir=prott5_dir)
+        
         model = model.to(device)
         model = model.eval()
-        tokenizer = T5Tokenizer.from_pretrained(transformer_name, do_lower_case=False, cache_dir=prott5_dir)
         
         print("Finished loading: {} in {:.1f}[s]".format(transformer_name,time.time()-start))
         return model, tokenizer
@@ -1027,8 +1040,8 @@ class ProtT5Microscope():
                 try:
                     with torch.no_grad():
                         prott5_output = self.prott5( input_ids, attention_mask=attention_mask )
-                except RuntimeError:
-                    print("RuntimeError for {} (L={})".format(pdb_id, seq_lens))
+                except RuntimeError as e:
+                    print("RuntimeError for {} (L={}): {}".format(pdb_id, seq_lens, str(e)))
                     print("Cleaning up ...")
                     del(token_encoding)
                     del(input_ids)
@@ -1110,7 +1123,8 @@ class ProtT5Microscope():
                         elif predictor_name=="BindEmbed21DL":
                             B, L, _ = residue_embedding.shape
                             # container for adding predictions of individual models in the ensemble
-                            ensemble_container = torch.zeros( (B, 3, L), device=device,dtype=torch.float16)
+                            dtype = torch.float32 if device.type == 'cpu' else torch.float16
+                            ensemble_container = torch.zeros( (B, 3, L), device=device,dtype=dtype)
                             for model in predictor.model: # for each model in the ensemble
                                 if use_onnx_model:
                                     ort_inputs = {model.get_inputs()[0].name: residue_embedding_transpose.numpy()}
@@ -1232,9 +1246,9 @@ class ProtT5Microscope():
                                 self.results["3DStructure"].append( predictor.predict(seq,emb_1d,emb_2d) )
                             
         exe_time = time.time()-start
-        print('Total time for generating embeddings and gathering predictions: ' +
-              '{:.2f} [s] ### Avg. time per protein: {:.3f} [s]'.format(
-                    exe_time, exe_time/len(self.ids) ))
+        #print('Total time for generating embeddings and gathering predictions: ' +
+        #      '{:.2f} [s] ### Avg. time per protein: {:.3f} [s]'.format(
+        #            exe_time, exe_time/len(self.ids) ))
         return None
 
 #### Utility functions
@@ -1297,7 +1311,11 @@ def load_model(model, weights_link, checkpoint_p,state_dict="state_dict"):
       model.load_state_dict(state[state_dict])
 
       model = model.eval()
-      model = model.half()
+      # Use float32 for CPU, float16 for GPU
+      if device.type == 'cpu':
+          model = model.float()
+      else:
+          model = model.half()
       model = model.to(device)
 
       return model
@@ -1410,11 +1428,10 @@ def main():
     parser = create_arg_parser()
     args   = parser.parse_args()
     
-    # Directory for storing all model checkpoints
-    root_dir = Path.cwd()
-    model_dir = root_dir / "checkpoints"
+    # Directory for storing all model checkpoints - use data directory to avoid quota issues
+    model_dir = Path("/p/scratch/hai_1072/reimt/cache/PGP_checkpoints")
     if not model_dir.is_dir():
-        model_dir.mkdir()
+        model_dir.mkdir(parents=True)
     
     global device
 

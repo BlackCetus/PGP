@@ -1,0 +1,13 @@
+name: torch_gpu_pip
+channels:
+  - conda-forge
+dependencies:
+  - python=3.10
+  - pip
+  - setuptools
+  - wheel
+  - ca-certificates
+  - openssl
+  - pip:
+      # torch family will be installed separately with index-url to ensure cu121 wheels
+      - 
