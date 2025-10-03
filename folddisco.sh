@@ -1,6 +1,6 @@
 #!/bin/bash
 # Job metadata
-#SBATCH --job-name=run_folddisco
+#SBATCH --job-name=run_folddisco20
 #SBATCH --account=hai_1072
 #SBATCH --partition=dc-hwai
 #SBATCH --time=12:00:00
@@ -57,7 +57,9 @@ start_ts=$(date +%s)
 # Keeping it does no harm for a single task, but remove if you prefer.
 folddisco query \
   -i /p/scratch/hai_1072/reimt/data/scop40pdb/folddisco/index/index_scop40 \
-  -q /p/scratch/hai_1072/reimt/data/scop40pdb/folddisco/input/folddisco_in_20.txt
+  -q /p/scratch/hai_1072/reimt/data/scop40pdb/folddisco/input/folddisco_in_20.txt \
+  --skip-match \
+
 end_ts=$(date +%s)
 
 echo "[INFO] Elapsed: $((end_ts - start_ts)) s"
