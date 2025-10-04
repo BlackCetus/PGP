@@ -137,7 +137,12 @@ input_dir="$base_out/input"
 motif_out_dir="$base_out/out"
 mkdir -p "$input_dir" "$motif_out_dir"
 
-manifest="$input_dir/folddisco_in_${percent}.txt"
+# Normalize percent suffix like generator: 7.5 -> 7p5, 10 -> 10
+percent_suffix="$percent"
+if [[ "$percent" == *.* ]]; then
+  percent_suffix="${percent/./p}"
+fi
+manifest="$input_dir/folddisco_in_${percent_suffix}.txt"
 
 # Fixed scripts root (absolute) to avoid Slurm spool relocation issues
 SCRIPTS_ROOT="/p/project/hai_1072/reimt/hiwi/PGP/scripts/folddisco_pipeline"
@@ -148,8 +153,8 @@ if [[ ! -f $gen_script ]]; then
 fi
 echo "[INFO] Using generator script: $gen_script" >&2
 
-if [[ $skip_existing -eq 1 && -d "$motif_out_dir/$percent" && -n $(ls -1 "$motif_out_dir/$percent" 2>/dev/null | head -n1) ]]; then
-  echo "[SKIP] Existing motif directory with files: $motif_out_dir/$percent" >&2
+if [[ $skip_existing -eq 1 && -d "$motif_out_dir/$percent_suffix" && -n $(ls -1 "$motif_out_dir/$percent_suffix" 2>/dev/null | head -n1) ]]; then
+  echo "[SKIP] Existing motif directory with files: $motif_out_dir/$percent_suffix" >&2
 else
   echo "[STEP] Generating manifest: $manifest" >&2
   python "$gen_script" \
@@ -176,8 +181,8 @@ fi
 
 if [[ $archive -eq 1 ]]; then
   echo "[STEP] Archiving motif outputs" >&2
-  ( cd "$motif_out_dir" && tar czf "${percent}_motifs.tar.gz" "$percent" )
-  ls -lh "$motif_out_dir/${percent}_motifs.tar.gz" >&2 || true
+  ( cd "$motif_out_dir" && tar czf "${percent_suffix}_motifs.tar.gz" "$percent_suffix" )
+  ls -lh "$motif_out_dir/${percent_suffix}_motifs.tar.gz" >&2 || true
 fi
 
 echo "[DONE] Search job complete (percent=$percent)" >&2

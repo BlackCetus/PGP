@@ -139,7 +139,7 @@ cat "$summary"
 
 if [[ $keep_intermediate -eq 0 ]]; then
   echo "[CLEANUP] Removing intermediate files" >&2
-  rm -f "$combined" "$sorted" "$first_hit" "$pr_curve" || true
+  rm -f "$combined" "$sorted" || true
 else
   echo "[CLEANUP] Keeping intermediate files (user requested)" >&2
 fi

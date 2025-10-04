@@ -211,8 +211,8 @@ def main():
     out_path = Path(args.out)
     import re as _re
     stem = out_path.stem
-    # Remove trailing _<number> if present
-    stem = _re.sub(r'_[0-9]+$', '', stem)
+    # Remove trailing _<number> or _<number.number> or _<number>p<number> if present
+    stem = _re.sub(r'_(\d+(?:\.\d+)?|\d+p\d+)$', '', stem)
     out_path = out_path.with_name(f"{stem}_{percent_str}{out_path.suffix}")
 
     if args.verbose:

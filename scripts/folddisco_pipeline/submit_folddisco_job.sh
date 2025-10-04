@@ -15,9 +15,9 @@ CFG_OUTPUT_BASE="/p/scratch/hai_1072/reimt/data/scop40pdb/folddisco"   # contain
 CFG_LOOKUP="/p/scratch/hai_1072/reimt/data/scop40pdb/scop_lookup.fix.tsv"
 # SLURM resources (defaults can be adjusted per site):
 CFG_GPU_PARTITION="dc-hwai"
-CFG_GPU_TIME="7:00:00"
+CFG_GPU_TIME="10:00:00"
 CFG_CPU_PARTITION="dc-hwai"
-CFG_CPU_TIME="02:00:00"
+CFG_CPU_TIME="2:00:00"
 CFG_ACCOUNT="hai_1072"
 CFG_GPUS=1
 CFG_CPUS_GPU=4

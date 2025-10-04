@@ -91,7 +91,9 @@ if [[ -d "$venv_dir" ]]; then
   source "$venv_dir/bin/activate"
 fi
 
-motif_dir="$output_base/out/${percent}"
+percent_suffix="$percent"
+if [[ "$percent" == *.* ]]; then percent_suffix="${percent/./p}"; fi
+motif_dir="$output_base/out/${percent_suffix}"
 out_dir="$output_base/out"
 [[ -d "$motif_dir" ]] || { echo "[ERROR] Motif dir missing: $motif_dir" >&2; exit 3; }
 
@@ -111,7 +113,7 @@ keep_flag=()
   --motif-dir "$motif_dir" \
   --lookup "$lookup" \
   --out-dir "$out_dir" \
-  --label "$percent" \
+  --label "$percent_suffix" \
   "${keep_flag[@]}"
 
 echo "[DONE] Benchmark job complete (percent=$percent)" >&2
